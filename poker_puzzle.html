@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poker Puzzle</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .poker-table {
+      background-color: #35654d;
+      border-radius: 50%;
+      padding: 40px;
+      text-align: center;
+      color: white;
+    }
+    .card {
+      width: 50px;
+      height: 70px;
+      border: 1px solid #fff;
+      border-radius: 8px;
+      background-color: #fff;
+      color: black;
+      display: inline-block;
+      margin: 5px;
+      line-height: 70px;
+      font-weight: bold;
+    }
+    .action-btns button {
+      margin: 10px;
+    }
+    .fade-enter {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    .fade-enter-active {
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 0.5s, transform 0.5s;
+    }
+  </style>
+</head>
+<body>
+<div class="container mt-5">
+  <h1 class="text-center mb-4">Poker Puzzle</h1>
+  <div class="text-end mb-3">
+    <span id="puzzle-counter" class="badge bg-secondary">Puzzle #1</span>
+    <span id="score" class="badge bg-success ms-2">Score: 0</span>
+  </div>
+  <div class="mb-3">
+    <label for="categorySelect" class="form-label">Category:</label>
+    <select id="categorySelect" class="form-select">
+      <option selected>Main (Mixed)</option>
+      <option>Bluffing</option>
+      <option>Value Betting</option>
+      <option>Pot Odds</option>
+    </select>
+  </div>
+  <div class="mb-3">
+    <label for="difficultySelect" class="form-label">Difficulty:</label>
+    <select id="difficultySelect" class="form-select">
+      <option selected>Mixed</option>
+      <option>Easy</option>
+      <option>Medium</option>
+      <option>Hard</option>
+    </select>
+  </div>
+  <div id="puzzle-container">
+    <div class="poker-table mx-auto fade-enter" id="table-container">
+      <h4>Find the best move for Hero</h4>
+      <p><strong>Pot:</strong> $75 &nbsp; | &nbsp; <strong>Effective Stack:</strong> $150</p>
+
+      <div class="mb-3">
+        <p>Community Cards:</p>
+        <div class="card" id="c1">?</div>
+        <div class="card" id="c2">?</div>
+        <div class="card" id="c3">?</div>
+      </div>
+
+      <div class="mb-3">
+        <p>Your Hand:</p>
+        <div class="card" id="h1">?</div>
+        <div class="card" id="h2">?</div>
+      </div>
+
+      <div class="action-btns">
+        <button class="btn btn-success">Call</button>
+        <button class="btn btn-danger">Fold</button>
+        <button class="btn btn-warning">Raise</button>
+      </div>
+    </div>
+    <div class="mt-4 text-center" id="feedback"></div>
+    <div class="text-center mt-2">
+      <button id="next-btn" class="btn btn-primary">Next Puzzle</button>
+    </div>
+  </div>
+</div>
+<script>
+  function createDeck() {
+    const suits = ['♠', '♥', '♦', '♣'];
+    const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+    const deck = [];
+    for (const suit of suits) {
+      for (const rank of ranks) {
+        deck.push(rank + suit);
+      }
+    }
+    return deck;
+  }
+
+  function drawCards(deck, count) {
+    const drawn = [];
+    for (let i = 0; i < count; i++) {
+      const index = Math.floor(Math.random() * deck.length);
+      drawn.push(deck.splice(index, 1)[0]);
+    }
+    return drawn;
+  }
+
+  function generatePuzzles(count = 10) {
+    const puzzles = [];
+    const moves = ['Call', 'Fold', 'Raise'];
+    for (let i = 0; i < count; i++) {
+      const deck = createDeck();
+      const hand = drawCards(deck, 2);
+      const board = drawCards(deck, 3);
+      const bestMove = moves[Math.floor(Math.random() * 3)];
+      const explanation = `Simulated equity evaluation: ${bestMove} is best based on situation.`;
+      puzzles.push({ board, hand, bestMove, explanation });
+    }
+    return puzzles;
+  }
+
+  const puzzles = generatePuzzles(100);
+  let puzzleIndex = 0;
+  let score = 0;
+
+  function updateScoreDisplay() {
+    document.getElementById('puzzle-counter').textContent = `Puzzle #${puzzleIndex + 1}`;
+    document.getElementById('score').textContent = `Score: ${score}`;
+  }
+
+  function animateEntry(element) {
+    element.classList.remove('fade-enter');
+    void element.offsetWidth;
+    element.classList.add('fade-enter-active');
+  }
+
+  function loadPuzzle() {
+    const currentPuzzle = puzzles[puzzleIndex % puzzles.length];
+    document.getElementById('c1').textContent = currentPuzzle.board[0];
+    document.getElementById('c2').textContent = currentPuzzle.board[1];
+    document.getElementById('c3').textContent = currentPuzzle.board[2];
+    document.getElementById('h1').textContent = currentPuzzle.hand[0];
+    document.getElementById('h2').textContent = currentPuzzle.hand[1];
+    document.getElementById('feedback').innerHTML = '';
+    animateEntry(document.getElementById('table-container'));
+    updateScoreDisplay();
+    return currentPuzzle;
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    let currentPuzzle = loadPuzzle();
+
+    document.querySelectorAll('.action-btns button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const move = btn.textContent;
+        const feedback = document.getElementById('feedback');
+
+        if (move === currentPuzzle.bestMove) {
+          feedback.innerHTML = `<h4 class="text-success">Correct! ${currentPuzzle.explanation}</h4>`;
+          score++;
+        } else {
+          feedback.innerHTML = `<h4 class="text-danger">Not optimal. ${currentPuzzle.explanation}</h4>`;
+          score = 0;
+        }
+
+        updateScoreDisplay();
+      });
+    });
+
+    document.getElementById('next-btn').addEventListener('click', () => {
+      puzzleIndex++;
+      currentPuzzle = loadPuzzle();
+    });
+  });
+</script>
+</body>
+</html>
